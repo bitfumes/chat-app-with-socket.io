@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div class="col-lg-4 offset-lg-4">
+            <div v-if="ready">
+                <h4>{{name}}</h4>
+                <p v-for="item in info">
+                    <small>{{item.name}} {{item.type}}</small>
+                </p>
+            </div>
+            <form @submit.prevent="setName" class="mt-4" v-else>
+                <div class="form-group row">
+                    <label>Set Your Name First</label>
+                    <input type="text" class="form-control col-9" v-model="name" placeholder="Type Here">
+                    <input type="submit" class="btn btn-small btn-info ml-1 col-2">
+                </div>
+            </form>
+            <div class="card bg-info" v-if="ready">
+                <div class="card-header text-white">
+                    Alladin Chats
+                    <span class="float-right">{{connectionCount}} connections, {{online.length}} Online</span>
+                </div>
+
+                <ul class="list-group list-group-flush text-right">
+                    <small v-if="typing" class="text-white">
+                        <i>{{typing}} is typing</i>
+                    </small>
+                    <li class="list-group-item" v-for="message in messages">
+                        <span :class="{'float-left':(message.type===1)}">
+                            {{message.message}}
+                            <small>:{{message.by}}</small>
+                        </span>
+                    </li>
+                </ul>
+
+                <div class="card-body">
+                    <form @submit.prevent="send">
+                        <div class="form-group">
+                            <input type="text" class="form-control" v-model="newmessage" placeholder="Type Here">
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+    <script>
+        var socket = io();
+        let app = new Vue({
+            el: '#app',
+            data: {
+                newmessage: null,
+                messages: [],
+                typing: false,
+                online: [],
+                name: null,
+                ready: false,
+                info: [],
+                connectionCount: 0
+            },
+            methods: {
+                send() {
+                    socket.emit('chat-message', { message: this.newmessage, user: this.name })
+                    this.messages.push({ message: this.newmessage, type: 0, by: 'Me' })
+                    this.newmessage = null
+                },
+                isTyping() {
+                    socket.emit('typing', this.name)
+                },
+                setName() {
+                    socket.emit('joined', this.name)
+                    this.ready = true
+                }
+            },
+            mounted() {
+                window.onbeforeunload = () => {
+                    socket.emit('leaved', this.name)
+                }
+                socket.on('noOfConnections', (count) => {
+                    this.connectionCount = count
+                })
+            },
+            watch: {
+                newmessage(value) {
+                    value ? socket.emit('typing') : socket.emit('stoptyping')
+                }
+            },
+            created() {
+                socket.on('chat-message', (data) => {
+                    this.messages.push({ message: data.message, type: 1, by: data.user })
+                    this.typing = false
+                })
+
+                socket.on('typing', (data) => {
+                    this.typing = data
+                })
+                socket.on('stoptyping', () => {
+                    this.typing = false
+                })
+
+                socket.on('leaved', (name) => {
+                    this.online.splice(this.online.indexOf(name))
+                    this.info.push({ name: name, type: 'Leaved' })
+                    setTimeout(() => {
+                        this.info = []
+                    }, 5000);
+                })
+
+                socket.on('joined', (name) => {
+                    this.online.push(name)
+                    this.info.push({ name: name, type: 'Joined' })
+                    setTimeout(() => {
+                        this.info = []
+                    }, 5000);
+                })
+            }
+        });
+    </script>
+</body>
+
+</html>
