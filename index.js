@@ -23,7 +23,7 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('chat-message', msg)
     })
     socket.on('joined', (name) => {
-        io.emit('joined')
+        socket.broadcast.emit('joined', name)
     })
     socket.on('leaved', (name) => {
         socket.broadcast.emit('leaved', name)

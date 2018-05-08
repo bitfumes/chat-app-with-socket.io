@@ -12,7 +12,7 @@
 
 <body>
     <div class="container" id="app">
-        <div class="col-lg-4 offset-lg-4">
+        <div class="col-md-4 col-lg-6 offset-lg-3 offset-md-4">
             <div v-if="ready">
                 <h4>{{name}}</h4>
                 <p v-for="item in info">
@@ -23,7 +23,7 @@
                 <div class="form-group row">
                     <label>Set Your Name First</label>
                     <input type="text" class="form-control col-9" v-model="name" placeholder="Type Here">
-                    <input type="submit" class="btn btn-small btn-info ml-1 col-2">
+                    <input type="submit" value="Add" class="btn btn-sm btn-info ml-1 col-2">
                 </div>
             </form>
             <div class="card bg-info" v-if="ready">
@@ -97,7 +97,7 @@
             },
             watch: {
                 newmessage(value) {
-                    value ? socket.emit('typing') : socket.emit('stoptyping')
+                    value ? socket.emit('typing', this.name) : socket.emit('stoptyping')
                 }
             },
             created() {
@@ -107,6 +107,7 @@
                 })
 
                 socket.on('typing', (data) => {
+                    console.log(data)
                     this.typing = data
                 })
                 socket.on('stoptyping', () => {
